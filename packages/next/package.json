@@ -10,7 +10,7 @@
   "homepage": "https://trpc.io",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/trpc/trpc.git",
+    "url": "git+https://github.com/Kanopy-Labs/trpc.git",
     "directory": "packages/next"
   },
   "eslintConfig": {
