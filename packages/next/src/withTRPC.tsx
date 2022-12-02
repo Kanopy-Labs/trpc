@@ -2,6 +2,7 @@
  * Heavily based on urql's ssr
  * https://github.com/FormidableLabs/urql/blob/main/packages/next-urql/src/with-urql-client.ts
  */
+import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
 import {
   DehydratedState,
   Hydrate,
@@ -9,6 +10,7 @@ import {
   QueryClientProvider,
   dehydrate,
 } from '@tanstack/react-query';
+import { persistQueryClient } from '@tanstack/react-query-persist-client';
 import type { CreateTRPCClientOptions } from '@trpc/client';
 import {
   TRPCClient,
@@ -24,6 +26,7 @@ import {
 } from '@trpc/react-query/shared';
 import type { AnyRouter, Dict, Maybe } from '@trpc/server';
 import type { ResponseMeta } from '@trpc/server/http';
+import { compress, decompress } from 'lz-string';
 import {
   AppContextType,
   AppPropsType,
@@ -33,6 +36,13 @@ import {
 import { NextRouter } from 'next/router';
 import React, { createElement, useState } from 'react';
 import ssrPrepass from 'react-ssr-prepass';
+
+const localStoragePersister = createSyncStoragePersister({
+  storage: window.localStorage,
+  key: 'kanopy_query_cache',
+  serialize: (data) => compress(JSON.stringify(data)),
+  deserialize: (data) => JSON.parse(decompress(data) as string),
+});
 
 function transformQueryOrMutationCacheErrors<
   TState extends
@@ -125,6 +135,12 @@ export function withTRPC<
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (props.pageProps as any).trpcState,
       );
+
+      persistQueryClient({
+        queryClient,
+        persister: localStoragePersister,
+        maxAge: 1000 * 60 * 60 * 24 * 7,
+      });
 
       return (
         <trpc.Provider
